@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#16a34a">
+    <meta name="description" content="SANTAP - Sistem Aplikasi Penyelamat & Efisiensi Pangan Kantin Sekolah PWA">
+    <title>SANTAP - Penyelamat Pangan Kantin</title>
+    
+    <!-- PWA Web App Manifest Inline -->
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlNBTlRBUCAtIFBlbnllbGFtYXQgUGFuZ2FuIEthbnRpbiIsCiAgInNob3J0X25hbWUiOiAiU0FOVEFQIiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmOGZhcDkiLAogICJ0aGVtZV9jb2xvciI6ICIjMTZhMzRhIgp9">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                        },
+                        accent: {
+                            500: '#f97316',
+                            600: '#ea580c',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts Inter & Lucide Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js for Visual Data -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; webkit-tap-highlight-color: transparent; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .glass-card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col md:flex-row text-slate-800 antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- APP NAVIGATION / SIDEBAR -->
+    <aside class="w-full md:w-72 bg-white border-b md:border-b-0 md:border-r border-slate-200/80 flex flex-col justify-between flex-shrink-0 z-20 no-print">
+        <div>
+            <!-- Header App Brand -->
+            <div class="p-4 md:p-6 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white shadow-lg shadow-brand-500/30">
+                        <i data-lucide="utensils-crossed" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-extrabold text-lg text-slate-900 tracking-tight leading-none">SANTAP <span class="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded ml-1 font-bold">PWA</span></h1>
+                        <p class="text-[10px] text-brand-600 font-semibold uppercase tracking-wider mt-1">Nolkan Sampahnya</p>
+                    </div>
+                </div>
+                <!-- Role Badge Mobile -->
+                <span id="roleBadgeMobile" class="md:hidden text-xs bg-brand-100 text-brand-800 font-semibold px-2.5 py-1 rounded-full border border-brand-200">
+                    Siswa/Guru
+                </span>
+            </div>
+
+            <!-- USER ACCOUNT WIDGET (SIDEBAR) -->
+            <div class="p-4 bg-emerald-50/50 border-b border-slate-100">
+                <div id="userAccountSection" class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3 overflow-hidden">
+                        <div id="userAvatar" class="w-9 h-9 rounded-full bg-brand-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 uppercase">
+                            G
+                        </div>
+                        <div class="truncate">
+                            <h4 id="userNameDisplay" class="text-xs font-bold text-slate-900 truncate">Pengunjung (Tamu)</h4>
+                            <p id="userRoleDisplay" class="text-[10px] text-slate-500 font-medium truncate">Belum Masuk Akun</p>
+                        </div>
+                    </div>
+                    <button id="authBtnSidebar" onclick="openAuthModal('login')" class="text-xs font-bold text-brand-600 hover:text-brand-700 bg-white border border-brand-200 px-2.5 py-1 rounded-lg shadow-sm hover:bg-brand-50 transition flex-shrink-0">
+                        Masuk
+                    </button>
+                </div>
+            </div>
+
+            <!-- User Role Switcher -->
+            <div class="p-4 bg-slate-50/80 border-b border-slate-100">
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Simulasi Peran Pengguna:</label>
+                <div class="relative">
+                    <select id="roleSelector" class="w-full bg-white border border-slate-300 text-slate-700 text-xs rounded-xl focus:ring-2 focus:ring-brand-500 p-2.5 font-bold shadow-sm transition">
+                        <option value="siswa">🎓 Siswa / Guru</option>
+                        <option value="kantin">🧑‍🍳 Pengelola Kantin</option>
+                        <option value="kader">🌿 Kader Lingkungan</option>
+                        <option value="admin">📊 Admin / Pengawas</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-360px)] hide-scrollbar">
+                <button onclick="switchTab('beranda')" id="nav-beranda" class="nav-btn w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl font-semibold text-xs transition text-slate-600 hover:bg-slate-100">
+                    <i data-lucide="home" class="w-4 h-4"></i>
+                    <span>Beranda Santap</span>
+                </button>
+
+                <button onclick="switchTab('kalkulator')" id="nav-kalkulator" class="nav-btn w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl font-semibold text-xs transition text-slate-600 hover:bg-slate-100">
+                    <i data-lucide="calculator" class="w-4 h-4"></i>
+                    <span>Kalkulator Porsi Pintar</span>
+                    <span id="badgeKantinOnly" class="ml-auto text-[9px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold">Kantin</span>
+                </button>
+
+                <button onclick="switchTab('papan')" id="nav-papan" class="nav-btn w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl font-semibold text-xs transition text-slate-600 hover:bg-slate-100">
+                    <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+                    <span>Papan Pangan Selamat</span>
+                    <span id="papanBadge" class="ml-auto bg-accent-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
+                </button>
+
+                <button onclick="switchTab('lab')" id="nav-lab" class="nav-btn w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl font-semibold text-xs transition text-slate-600 hover:bg-slate-100">
+                    <i data-lucide="flask-conical" class="w-4 h-4"></i>
+                    <span>Lab Eko-Enzim</span>
+                </button>
+
+                <button onclick="switchTab('dampak')" id="nav-dampak" class="nav-btn w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl font-semibold text-xs transition text-slate-600 hover:bg-slate-100">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                    <span>Jejak Dampak (Adiwiyata)</span>
+                </button>
+
+                <button onclick="switchTab('tukar')" id="nav-tukar" class="nav-btn w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl font-semibold text-xs transition text-slate-600 hover:bg-slate-100">
+                    <i data-lucide="award" class="w-4 h-4"></i>
+                    <span>Tukar Poin Pahlawan</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Dynamic Role-Based Stats Widget (Bottom Sidebar) -->
+        <div class="p-4 border-t border-slate-200 bg-emerald-50/60 m-3 rounded-2xl border border-emerald-100">
+            <div class="flex items-center justify-between mb-1">
+                <span id="userPointsLabel" class="text-[11px] text-slate-500 font-bold">Poin Pahlawan Pangan</span>
+                <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i>
+            </div>
+            <div class="flex items-baseline space-x-1">
+                <span id="userPointsDisplay" class="text-2xl font-black text-emerald-700">350</span>
+                <span id="userPointsUnit" class="text-xs text-emerald-600 font-bold">PTS</span>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-1">Estimasi Reduksi ~<span id="userCo2Display">8.75</span> kg CO₂e</p>
+        </div>
+    </aside>
+
+    <!-- MAIN VIEW AREA -->
+    <main class="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50 min-h-screen">
+        
+        <!-- HEADER STATUS BAR -->
+        <header class="hidden md:flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 no-print">
+            <div>
+                <h2 id="pageTitle" class="text-xl font-extrabold text-slate-900">Beranda Santap</h2>
+                <p class="text-xs text-slate-500 mt-0.5">Sistem Aplikasi Penyelamat & Efisiensi Pangan Kantin Sekolah</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2 bg-emerald-100/70 text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-full border border-emerald-200">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Surakarta Web App Online</span>
+                </div>
+                
+                <!-- Account Button Header -->
+                <button id="headerAuthBtn" onclick="openAuthModal('login')" class="flex items-center space-x-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl border border-slate-200 transition">
+                    <i data-lucide="user" class="w-4 h-4 text-brand-600"></i>
+                    <span id="headerAuthBtnText">Masuk Akun</span>
+                </button>
+
+                <div class="text-right">
+                    <div id="currentRoleBadge" class="text-xs font-bold text-brand-700 bg-brand-50 px-3 py-1 rounded-xl border border-brand-200">
+                        🎓 Siswa / Guru
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ==================== TAB 1: BERANDA ==================== -->
+        <section id="tab-beranda" class="tab-content space-y-6">
+            <!-- Hero Banner -->
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-700 via-brand-600 to-emerald-800 text-white p-6 md:p-8 shadow-xl">
+                <div class="relative z-10 max-w-2xl">
+                    <span class="bg-white/20 text-white text-[11px] font-bold px-3 py-1 rounded-full backdrop-blur-md inline-block mb-3">
+                        🌱 Web App CTARSA Youth Greenovation II
+                    </span>
+                    <h2 class="text-2xl md:text-3xl font-black tracking-tight leading-tight mb-2">
+                        Santap Makanannya,<br><span class="text-amber-300">Nolkan Sampahnya!</span>
+                    </h2>
+                    <p class="text-emerald-100 text-xs md:text-sm leading-relaxed mb-6">
+                        Mari cegah potensi 142,3 ton sampah makanan harian di Kota Surakarta dimulai dari piring kantin sekolah kita.
+                    </p>
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="switchTab('papan')" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-5 py-2.5 rounded-xl shadow-lg transition flex items-center space-x-2 text-xs">
+                            <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+                            <span>Selamatkan Makanan Harian</span>
+                        </button>
+                        <button onclick="switchTab('lab')" class="bg-white/10 hover:bg-white/20 text-white font-bold px-4 py-2.5 rounded-xl border border-white/20 backdrop-blur-md transition text-xs">
+                            Olahan Eko-Enzim
+                        </button>
+                    </div>
+                </div>
+                <div class="absolute -right-10 -bottom-10 opacity-15 pointer-events-none">
+                    <i data-lucide="leaf" class="w-80 h-80 text-white"></i>
+                </div>
+            </div>
+
+            <!-- Key Factual Data Cards Surakarta -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-4">
+                    <div class="p-3 bg-red-100 text-red-600 rounded-xl">
+                        <i data-lucide="trash-2" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-black text-slate-900">142,3 Ton</div>
+                        <div class="text-xs text-slate-500 font-medium">Sampah Pangan/Hari Surakarta</div>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-4">
+                    <div class="p-3 bg-amber-100 text-amber-600 rounded-xl">
+                        <i data-lucide="scale" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-black text-slate-900">0,73 kg</div>
+                        <div class="text-xs text-slate-500 font-medium">Sisa Pangan / Rumah Tangga / Hari</div>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-4">
+                    <div class="p-3 bg-emerald-100 text-emerald-600 rounded-xl">
+                        <i data-lucide="cloud-off" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-black text-slate-900">10,1%</div>
+                        <div class="text-xs text-slate-500 font-medium">Emisi GRK Sektor Limbah Solo</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: LATAR BELAKANG & DATA FAJTUAL SURAKARTA -->
+            <div class="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-6">
+                <div class="border-b border-slate-100 pb-4">
+                    <span class="text-xs font-bold text-brand-600 uppercase tracking-widest bg-brand-50 px-3 py-1 rounded-full border border-brand-100">Landasan Data Faktual</span>
+                    <h3 class="text-xl font-bold text-slate-900 mt-2">Latar Belakang & Pemetaan Sumber Limbah Pangan Kota Surakarta</h3>
+                    <p class="text-xs text-slate-600 leading-relaxed mt-1">
+                        Berdasarkan inventarisasi Dinas Lingkungan Hidup (DLH) Kota Surakarta, limbah makanan memberikan dampak signifikan pada lingkungan lokal maupun akumulasi Gas Rumah Kaca (GRK). Ketidakpastian jumlah pembeli, ketidaktepatan takaran porsi masak pengelola kantin, dan ketiadaan saluran komunikasi real-time menjadi akar masalah utama terbuangnya sisa makanan bersih layak konsumsi.
+                    </p>
+                </div>
+
+                <!-- Table Pemetaan Sumber Limbah -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-700">
+                        <thead class="bg-slate-100 text-slate-800 uppercase font-bold text-[11px] border-b border-slate-200">
+                            <tr>
+                                <th class="p-3 rounded-l-xl">Sektor Sumber Limbah</th>
+                                <th class="p-3">Estimasi Volume Harian</th>
+                                <th class="p-3 rounded-r-xl">Catatan Khusus & Potensi Intervensi DLH Surakarta</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr>
+                                <td class="p-3 font-semibold text-slate-900">Rumah Tangga</td>
+                                <td class="p-3 font-bold text-red-600">~103,8 Ton/hari</td>
+                                <td class="p-3 text-slate-500">Penyumbang terbesar (0,73 kg / keluarga / hari).</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-semibold text-slate-900">Pasar Tradisional</td>
+                                <td class="p-3 font-bold text-amber-600">30,0 Ton/hari</td>
+                                <td class="p-3 text-slate-500">Sektor utama pasar komersial (7,28% dari total timbulan sampah kota).</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-semibold text-slate-900">Komersial (Hotel, Restoran)</td>
+                                <td class="p-3 font-bold text-slate-800">3,0 Ton/hari</td>
+                                <td class="p-3 text-slate-500">Sisa katering dan buffet operasional harian.</td>
+                            </tr>
+                            <tr class="bg-emerald-50/70 font-medium">
+                                <td class="p-3 font-bold text-emerald-900 flex items-center gap-1.5">
+                                    <i data-lucide="target" class="w-4 h-4 text-emerald-600"></i>
+                                    Kantin Sekolah & Edukasi
+                                </td>
+                                <td class="p-3 font-extrabold text-emerald-700">~5,5 Ton/hari</td>
+                                <td class="p-3 text-emerald-800 font-semibold">Titik intervensi paling strategis via Web App SANTAP untuk membentuk perilaku zero-waste sejak dini!</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Callout Methane Gas Warning -->
+                <div class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl flex items-start space-x-3">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5"></i>
+                    <div class="text-xs text-amber-900">
+                        <span class="font-bold">Fakta Emisi Gas Metana (CH₄):</span> Total emisi Kota Surakarta mencapai 1.376.302,47 ton CO₂e dengan Sektor Limbah menyumbang 10,1%. 
+                        Pembusukan <strong>1 kg sisa makanan di TPA melepaskan hingga 2,5 kg gas metana (CH₄)</strong> yang merusak lapisan ozon 28x lebih berbahaya dibanding CO₂ biasa!
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spotlight Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                            <i data-lucide="flame" class="w-4 h-4 text-accent-500"></i>
+                            Porsi Selamatkan Terpopuler Saat Ini
+                        </h3>
+                        <button onclick="switchTab('papan')" class="text-xs text-brand-600 font-bold hover:underline">Lihat Semua →</button>
+                    </div>
+                    <div id="homeFlashSaleContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Dynamic Item loaded via JS -->
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm mb-4 flex items-center gap-2">
+                            <i data-lucide="newspaper" class="w-4 h-4 text-brand-600"></i>
+                            Kabar Zero-Waste Sekolah
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="border-b border-slate-100 pb-3">
+                                <span class="text-[9px] bg-brand-100 text-brand-700 font-bold px-2 py-0.5 rounded">Adiwiyata</span>
+                                <h4 class="text-xs font-semibold text-slate-800 hover:text-brand-600 cursor-pointer mt-1">Kantin SMA Surakarta Hemat 45kg Sampah Minggu Ini!</h4>
+                                <p class="text-[11px] text-slate-500 mt-0.5">Penggunaan SANTAP menekan sisa nasi hingga 88%.</p>
+                            </div>
+                            <div class="border-b border-slate-100 pb-3">
+                                <span class="text-[9px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded">Eko-Enzim</span>
+                                <h4 class="text-xs font-semibold text-slate-800 hover:text-brand-600 cursor-pointer mt-1">Hasil Lab Eko-Enzim Siap Siap Digunakan Cuci Piring Kantin</h4>
+                                <p class="text-[11px] text-slate-500 mt-0.5">Fermentasi kulit nanas & jeruk menghasilkan 15L cairan alami.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-100 text-center">
+                        <span class="text-[11px] text-slate-400 italic">Diperbarui real-time oleh Kader Lingkungan</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 2: KALKULATOR PORSI PINTAR ==================== -->
+        <section id="tab-kalkulator" class="tab-content hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-base">Kalkulator Porsi Pintar (Prediksi Presensi & Menu)</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Estimasi kebutuhan masak presisi untuk mencegah surplus sejak awal di dapur kantin.</p>
+                    </div>
+                    <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full">Khusus Pengelola Kantin</span>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <!-- Form Input -->
+                    <form id="calcForm" onsubmit="calculatePortions(event)" class="lg:col-span-7 space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Rencana Menu Utama Harian</label>
+                            <input type="text" id="calcMenuName" value="Ayam Geprek + Nasi Kebuli" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs focus:ring-2 focus:ring-brand-500">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Total Kapasitas Siswa (Porsi Standard)</label>
+                                <input type="number" id="calcTotalStudents" value="500" min="10" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs focus:ring-2 focus:ring-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Estimasi Presensi Siswa (%)</label>
+                                <input type="number" id="calcAttendanceRate" value="90" min="1" max="100" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs focus:ring-2 focus:ring-brand-500">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Kondisi Cuaca Hari Ini</label>
+                                <select id="calcWeather" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs focus:ring-2 focus:ring-brand-500">
+                                    <option value="cerah">☀️ Cerah / Normal (100%)</option>
+                                    <option value="hujan">🌧️ Hujan Deras (-15% Minat Kantin)</option>
+                                    <option value="panas">🔥 Sangat Panas (-5% Nasi, Minum Meningkat)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Jadwal Operasional Sekolah</label>
+                                <select id="calcSchedule" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs focus:ring-2 focus:ring-brand-500">
+                                    <option value="normal">🏫 Hari Efektif Normal (100%)</option>
+                                    <option value="ujian">📝 Pekan Ujian/PAS (-25% Pulang Cepat)</option>
+                                    <option value="ekstra">⚽ Hari Kegiatan Ekstra (+10%)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 rounded-xl shadow-md transition flex items-center justify-center space-x-2 text-xs">
+                            <i data-lucide="cpu" class="w-4 h-4"></i>
+                            <span>Hitung Rekomendasi Porsi Aman</span>
+                        </button>
+                    </form>
+
+                    <!-- Output Panel -->
+                    <div class="lg:col-span-5 bg-slate-900 text-white p-6 rounded-2xl flex flex-col justify-between relative overflow-hidden">
+                        <div>
+                            <div class="flex justify-between items-center mb-6">
+                                <span class="text-[10px] uppercase tracking-widest text-emerald-400 font-extrabold">Hasil Rekomendasi AI</span>
+                                <span class="text-[10px] bg-slate-800 text-slate-300 px-2.5 py-1 rounded-full border border-slate-700">Algoritma V1.2</span>
+                            </div>
+
+                            <div class="space-y-6">
+                                <div>
+                                    <div class="text-xs text-slate-400 mb-1">Rekomendasi Porsi Masak Safe:</div>
+                                    <div class="flex items-baseline space-x-2">
+                                        <span id="resRecommendedPortions" class="text-5xl font-black text-emerald-400">338</span>
+                                        <span class="text-xs font-semibold text-slate-300">Porsi</span>
+                                    </div>
+                                    <div class="text-[11px] text-slate-400 mt-1">Dari standar biasa: <span id="resStandardPortions" class="text-slate-200 font-bold">500</span> porsi.</div>
+                                </div>
+
+                                <div class="p-4 bg-slate-800/80 rounded-xl border border-slate-700/80 space-y-2">
+                                    <div class="flex justify-between text-xs">
+                                        <span class="text-slate-400">Potensi Surplus Dicegah:</span>
+                                        <span id="resPreventedWaste" class="font-bold text-amber-400">162 Porsi (~32.4 kg)</span>
+                                    </div>
+                                    <div class="flex justify-between text-xs">
+                                        <span class="text-slate-400">Estimasi Hemat Bahan (Rp):</span>
+                                        <span id="resMoneySaved" class="font-bold text-emerald-400">Rp 486.000</span>
+                                    </div>
+                                    <div class="flex justify-between text-xs">
+                                        <span class="text-slate-400">Reduksi CO₂e Otomatis:</span>
+                                        <span id="resCo2Prevented" class="font-bold text-emerald-400">81.0 kg CO₂e</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 pt-4 border-t border-slate-800">
+                            <button onclick="applyToMenu()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-2">
+                                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                <span>Terapkan Sebagai Target Masak Dapur</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 3: PAPAN PANGAN SELAMAT ==================== -->
+        <section id="tab-papan" class="tab-content hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base">Papan Pangan Selamat (Flash Sale Sisa Layak)</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Bantu konsumsi makanan bersih layak makan dengan diskon 30% - 50% menjelang jam istirahat/pulang.</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button id="btnOpenAddMenu" onclick="toggleAddMenuModal()" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition flex items-center space-x-2">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>+ Unggah Sisa Porsi (Kantin)</span>
+                    </button>
+                    <div id="restrictedAddMenuNotice" class="text-xs bg-slate-100 text-slate-500 px-3 py-2 rounded-xl border border-slate-200 flex items-center gap-1.5">
+                        <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                        <span>Hanya Kantin/Admin yang dapat menambah menu</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="foodGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Items Dynamic JS -->
+            </div>
+        </section>
+
+        <!-- ==================== TAB 4: LABORATORIUM EKO-ENZIM ==================== -->
+        <section id="tab-lab" class="tab-content hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-base">Laboratorium Eko-Enzim & Pupuk Organik</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Transformasi limbah kulit buah & sisa sayuran dapur kantin menjadi cairan pembersih serbaguna alami.</p>
+                    </div>
+                    <span class="text-xs bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full">Kader Lingkungan</span>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div class="lg:col-span-6 space-y-5">
+                        <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
+                            <div class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider mb-1">Rasio Standar Fermentasi (1 : 3 : 10)</div>
+                            <div class="flex justify-between items-center text-center text-xs text-emerald-900 font-bold mt-2">
+                                <div class="bg-white p-2 rounded-lg border border-emerald-200 w-1/3 mr-1">
+                                    <span class="block text-brand-600 text-base">1</span> Gula/Molase
+                                </div>
+                                <div class="bg-white p-2 rounded-lg border border-emerald-200 w-1/3 mx-1">
+                                    <span class="block text-brand-600 text-base">3</span> Sampah Organik
+                                </div>
+                                <div class="bg-white p-2 rounded-lg border border-emerald-200 w-1/3 ml-1">
+                                    <span class="block text-brand-600 text-base">10</span> Air Bersih
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Bobot Limbah Kulit Buah / Sayuran Dapur (kg)</label>
+                            <input type="number" id="wasteWeightInput" value="3.0" step="0.1" min="0.1" oninput="calculateEcoEnzyme()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3.5 text-base font-bold text-slate-800 focus:ring-2 focus:ring-brand-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Jenis Bahan Utama Limbah</label>
+                            <select id="wasteTypeInput" onchange="calculateEcoEnzyme()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs focus:ring-2 focus:ring-brand-500">
+                                <option value="citrus">🍊 Kulit Jeruk & Nanas (Aroma Segar Pembersih Meja)</option>
+                                <option value="vegetables">🥬 Sisa Sayuran Dapur (Cocok Pupuk Alami)</option>
+                                <option value="mixed">🍎 Campuran Buah Manis (Lantai & Piring)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-6 bg-slate-100 p-6 rounded-2xl border border-slate-200 flex flex-col justify-between">
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-xs mb-4 flex items-center gap-2 uppercase tracking-wider">
+                                <i data-lucide="recipe" class="w-4 h-4 text-brand-600"></i>
+                                Resep Presisi Olahan Eko-Enzim
+                            </h4>
+
+                            <div class="space-y-3">
+                                <div class="bg-white p-3.5 rounded-xl border border-slate-200 flex justify-between items-center">
+                                    <span class="text-xs font-semibold text-slate-600">Gula Merah / Molase:</span>
+                                    <span id="recipeSugar" class="text-sm font-extrabold text-brand-700">1.0 kg</span>
+                                </div>
+                                <div class="bg-white p-3.5 rounded-xl border border-slate-200 flex justify-between items-center">
+                                    <span class="text-xs font-semibold text-slate-600">Sampah Organik Diinput:</span>
+                                    <span id="recipeWaste" class="text-sm font-extrabold text-amber-600">3.0 kg</span>
+                                </div>
+                                <div class="bg-white p-3.5 rounded-xl border border-slate-200 flex justify-between items-center">
+                                    <span class="text-xs font-semibold text-slate-600">Air Bersih / AC:</span>
+                                    <span id="recipeWater" class="text-sm font-extrabold text-blue-600">10.0 Liter</span>
+                                </div>
+                                <div class="bg-emerald-600 text-white p-4 rounded-xl flex justify-between items-center shadow-md">
+                                    <div>
+                                        <div class="text-[10px] text-emerald-200 font-semibold uppercase">Estimasi Hasil Cairan Pembersih</div>
+                                        <div id="recipeYield" class="text-lg font-black">~ 12.0 Liter</div>
+                                    </div>
+                                    <div class="text-right text-[10px] text-emerald-100">
+                                        Masa Panen: <br><span class="font-bold">90 Hari (3 Bulan)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="logEcoEnzymeBatch()" class="mt-6 w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl text-xs transition flex items-center justify-center space-x-2">
+                            <i data-lucide="save" class="w-4 h-4"></i>
+                            <span>Catat Produksi Batch Ke Log Adiwiyata</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 5: DASBOR JEJAK DAMPAK LINGKUNGAN ==================== -->
+        <section id="tab-dampak" class="tab-content hidden space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm no-print">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base">Jejak Dampak Lingkungan (Laporan Adiwiyata Ready)</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Metrik akumulatif penyelamatan pangan dan kalkulasi reduksi emisi gas metana (CH₄) & CO₂e.</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="window.print()" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition flex items-center space-x-2">
+                        <i data-lucide="printer" class="w-4 h-4"></i>
+                        <span>Cetak Laporan Adiwiyata</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Print Header -->
+            <div class="hidden print-only mb-6 border-b pb-4">
+                <h1 class="text-2xl font-bold">LAPORAN CAPAIAN ZERO WASTE SANTAP</h1>
+                <p class="text-sm text-gray-600">Program Penyelamatan Pangan Kantin Sekolah - Kota Surakarta</p>
+                <p class="text-xs text-gray-500 mt-1">Dicetak pada: <span id="printDate"></span></p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Total Makanan Dicegah Terbuang</div>
+                    <div class="flex items-baseline space-x-2">
+                        <span id="metricFoodSaved" class="text-4xl font-black text-slate-900">128.5</span>
+                        <span class="text-xs font-bold text-emerald-600">kg</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-2">Setara <span id="metricPortionsSaved" class="font-bold text-slate-700">642</span> porsi makanan bersih.</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Reduksi Emisi CO₂e / Metana</div>
+                    <div class="flex items-baseline space-x-2">
+                        <span id="metricCo2Reduced" class="text-4xl font-black text-emerald-600">321.25</span>
+                        <span class="text-xs font-bold text-emerald-600">kg CO₂e</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-2">Faktor Konversi: 1 kg sampah = 2.5 kg CO₂e.</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden">
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Poin Pahlawan Terakumulasi</div>
+                    <div class="flex items-baseline space-x-2">
+                        <span id="metricTotalPoints" class="text-4xl font-black text-amber-500">12,850</span>
+                        <span class="text-xs font-bold text-amber-600">PTS</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-2">Partisipasi Aktif: <span class="font-bold text-slate-700">142 Siswa & Guru</span></p>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                <h4 class="font-bold text-slate-900 text-xs mb-4 uppercase tracking-wider">Grafik Tren Penyelamatan Pangan Mingguan (kg)</h4>
+                <div class="h-64 relative">
+                    <canvas id="impactChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 6: TUKAR POIN PAHLAWAN ==================== -->
+        <section id="tab-tukar" class="tab-content hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base">Katalog Tukar Poin Pahlawan</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Apresiasi aksi nyata kamu menyelamatkan makanan kantin sekolah!</p>
+                </div>
+                <div class="bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl flex items-center space-x-2">
+                    <i data-lucide="coins" class="w-5 h-5 text-amber-600"></i>
+                    <span class="text-xs font-bold text-amber-900">Saldo Anda: <span id="rewardUserPoints" class="text-sm font-extrabold text-amber-600">350</span></span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col justify-between">
+                    <div class="p-5">
+                        <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mb-4">
+                            <i data-lucide="pen-tool" class="w-6 h-6"></i>
+                        </div>
+                        <h4 class="font-bold text-slate-900 text-sm">Set Alat Tulis Ramah Lingkungan</h4>
+                        <p class="text-xs text-slate-500 mt-1">1x Pensil Kayu Daur Ulang + Buku Catatan Eco-Paper.</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold">Dibutuhkan:</span>
+                            <span class="font-black text-amber-600 text-base">150 Poin</span>
+                        </div>
+                        <button onclick="redeemReward('Set Alat Tulis', 150)" class="bg-brand-600 hover:bg-brand-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
+                            Tukar Sekarang
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col justify-between">
+                    <div class="p-5">
+                        <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center mb-4">
+                            <i data-lucide="ticket" class="w-6 h-6"></i>
+                        </div>
+                        <h4 class="font-bold text-slate-900 text-sm">Voucher Kantin Rp 5.000</h4>
+                        <p class="text-xs text-slate-500 mt-1">Potongan belanja menu sehat kantin sekolah tanpa minimal belanja.</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold">Dibutuhkan:</span>
+                            <span class="font-black text-amber-600 text-base">200 Poin</span>
+                        </div>
+                        <button onclick="redeemReward('Voucher Kantin Rp 5.000', 200)" class="bg-brand-600 hover:bg-brand-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
+                            Tukar Sekarang
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col justify-between">
+                    <div class="p-5">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
+                            <i data-lucide="spray-can" class="w-6 h-6"></i>
+                        </div>
+                        <h4 class="font-bold text-slate-900 text-sm">Botol Eko-Enzim 250ml</h4>
+                        <p class="text-xs text-slate-500 mt-1">Cairan pembersih alami hasil karya fermentasi Lab Kader Lingkungan.</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] text-slate-400 block uppercase font-bold">Dibutuhkan:</span>
+                            <span class="font-black text-amber-600 text-base">300 Poin</span>
+                        </div>
+                        <button onclick="redeemReward('Botol Eko-Enzim 250ml', 300)" class="bg-brand-600 hover:bg-brand-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
+                            Tukar Sekarang
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL UNGGAH MENU -->
+    <div id="addMenuModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden no-print">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-slate-900 text-sm">Unggah Sisa Porsi Layak (Flash Sale)</h3>
+                <button onclick="toggleAddMenuModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <form id="addMenuForm" onsubmit="handleAddNewFood(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Makanan</label>
+                    <input type="text" id="newFoodName" required placeholder="Misal: Nasi Goreng Spesial" class="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Harga Normal (Rp)</label>
+                        <input type="number" id="newFoodOriginalPrice" required placeholder="12000" class="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Diskon (%)</label>
+                        <input type="number" id="newFoodDiscount" required value="40" min="10" max="70" class="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Jumlah Porsi</label>
+                        <input type="number" id="newFoodPortions" required value="5" min="1" class="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Batas Waktu Klaim</label>
+                        <input type="text" id="newFoodTime" required value="14:00 WIB" class="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500">
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end space-x-2">
+                    <button type="button" onclick="toggleAddMenuModal()" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-semibold">Batal</button>
+                    <button type="submit" class="px-5 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700">Simpan & Tayangkan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL AUTHENTICATION & PROFIL PENGGUNA -->
+    <div id="authModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden no-print">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 id="authModalTitle" class="font-bold text-slate-900 text-sm">Masuk ke SANTAP</h3>
+                <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <!-- FORM LOGIN -->
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Email / Username</label>
+                    <input type="text" id="loginIdentifier" required placeholder="siswa@sekolah.sch.id" class="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Kata Sandi</label>
+                    <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500">
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700 transition">
+                    Masuk Sekarang
+                </button>
+                <div class="text-center pt-2">
+                    <p class="text-xs text-slate-500">Belum punya akun? <button type="button" onclick="switchAuthView('register')" class="text-brand-600 font-bold hover:underline">Daftar Akun</button></p>
+                </div>
+            </form>
+
+            <!-- FORM REGISTER -->
+            <form id="registerForm" onsubmit="handleRegister(event)" class="space-y-3 hidden">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Lengkap</label>
+                    <input type="text" id="regName" required placeholder="Dyah Khaira" class="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Email Sekolah</label>
+                    <input type="email" id="regEmail" required placeholder="nama@sekolah.sch.id" class="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Peran Akun</label>
+                        <select id="regRole" class="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500">
+                            <option value="siswa">🎓 Siswa / Guru</option>
+                            <option value="kantin">🧑‍🍳 Pengelola Kantin</option>
+                            <option value="kader">🌿 Kader Lingkungan</option>
+                            <option value="admin">📊 Admin Sekolah</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Kata Sandi</label>
+                        <input type="password" id="regPassword" required placeholder="••••••••" class="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-brand-500">
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700 transition">
+                    Buat Akun Baru
+                </button>
+                <div class="text-center pt-2">
+                    <p class="text-xs text-slate-500">Sudah punya akun? <button type="button" onclick="switchAuthView('login')" class="text-brand-600 font-bold hover:underline">Masuk</button></p>
+                </div>
+            </form>
+
+            <!-- PROFILE VIEW (JIKA SUDAH LOGIN) -->
+            <div id="profileView" class="space-y-4 hidden">
+                <div class="flex items-center space-x-3 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                    <div id="profileModalAvatar" class="w-12 h-12 rounded-full bg-brand-600 text-white font-black text-lg flex items-center justify-center uppercase">
+                        U
+                    </div>
+                    <div>
+                        <h4 id="profileModalName" class="font-extrabold text-slate-900 text-sm">Nama Pengguna</h4>
+                        <p id="profileModalEmail" class="text-xs text-slate-500">email@sekolah.sch.id</p>
+                        <span id="profileModalRole" class="inline-block text-[10px] bg-brand-100 text-brand-800 font-bold px-2 py-0.5 rounded mt-1">Siswa / Guru</span>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-xs p-2.5 bg-emerald-50 rounded-xl border border-emerald-100">
+                        <span class="text-emerald-800 font-semibold">Total Saldo Poin:</span>
+                        <span id="profileModalPoints" class="font-extrabold text-emerald-700">350 PTS</span>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex flex-col space-y-2">
+                    <button onclick="handleLogout()" class="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                        <span>Keluar dari Akun</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 no-print"></div>
+
+    <!-- MAIN PWA APP LOGIC & SERVICE WORKER REGISTRATION -->
+    <script>
+        // Inline Lightweight Service Worker Registration for PWA Capabilities
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `
+                    const CACHE_NAME = 'santap-pwa-v1';
+                    self.addEventListener('install', (e) => {
+                        self.skipWaiting();
+                    });
+                    self.addEventListener('fetch', (e) => {
+                        e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'text/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(swUrl).catch(err => console.log('SW setup skipped'));
+            });
+        }
+
+        // Default App Items State
+        const defaultFoods = [
+            { id: 1, name: 'Soto Ayam Madura & Nasi', originalPrice: 10000, discount: 50, portions: 6, time: '13:30 WIB' },
+            { id: 2, name: 'Paket Ayam Geprek + Es Teh', originalPrice: 15000, discount: 40, portions: 4, time: '14:00 WIB' },
+            { id: 3, name: 'Roti Bakar Coklat Keju', originalPrice: 8000, discount: 30, portions: 8, time: '13:45 WIB' }
+        ];
+
+        // Default Registered Users Storage Initializer
+        const defaultUsers = [
+            { id: '1', name: 'Siswa Teladan', email: 'siswa@sekolah.sch.id', password: '123', role: 'siswa', points: 350 },
+            { id: '2', name: 'Ibu Kantin Utama', email: 'kantin@sekolah.sch.id', password: '123', role: 'kantin', points: 120 },
+            { id: '3', name: 'Kader Adiwiyata', email: 'kader@sekolah.sch.id', password: '123', role: 'kader', points: 240 }
+        ];
+
+        if (!localStorage.getItem('santap_users')) {
+            localStorage.setItem('santap_users', JSON.stringify(defaultUsers));
+        }
+
+        // State Management
+        let state = {
+            currentUser: JSON.parse(localStorage.getItem('santap_current_user')) || null,
+            role: 'siswa',
+            userPoints: {
+                siswa: parseInt(localStorage.getItem('santap_pts_siswa')) || 350,
+                kantin: parseInt(localStorage.getItem('santap_pts_kantin')) || 120,
+                kader: parseInt(localStorage.getItem('santap_pts_kader')) || 240,
+                admin: parseInt(localStorage.getItem('santap_pts_admin')) || 500,
+            },
+            foodItems: JSON.parse(localStorage.getItem('santap_food_items')) || defaultFoods,
+            metrics: JSON.parse(localStorage.getItem('santap_metrics')) || {
+                foodSavedKg: 128.5,
+                co2ReducedKg: 321.25,
+                totalPointsEarned: 12850
+            }
+        };
+
+        // Web Audio Feedback Haptic/Sound
+        function playSuccessSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+            } catch (e) {
+                console.log('Audio Context suppressed without gesture');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            setupRoleSelector();
+            syncAccountUI();
+            updateUI();
+            calculateEcoEnzyme();
+            initChart();
+            document.getElementById('printDate').innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        });
+
+        // ================= FITUR USER ACCOUNT LOGIC =================
+        function openAuthModal(view = 'login') {
+            const modal = document.getElementById('authModal');
+            modal.classList.remove('hidden');
+            if (state.currentUser) {
+                switchAuthView('profile');
+            } else {
+                switchAuthView(view);
+            }
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
+
+        function switchAuthView(view) {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const profileView = document.getElementById('profileView');
+            const modalTitle = document.getElementById('authModalTitle');
+
+            loginForm.classList.add('hidden');
+            registerForm.classList.add('hidden');
+            profileView.classList.add('hidden');
+
+            if (view === 'login') {
+                modalTitle.innerText = "Masuk Akun SANTAP";
+                loginForm.classList.remove('hidden');
+            } else if (view === 'register') {
+                modalTitle.innerText = "Pendaftaran Akun Baru";
+                registerForm.classList.remove('hidden');
+            } else if (view === 'profile') {
+                modalTitle.innerText = "Profil Pengguna SANTAP";
+                profileView.classList.remove('hidden');
+                updateProfileModalData();
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const identifier = document.getElementById('loginIdentifier').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            const users = JSON.parse(localStorage.getItem('santap_users')) || [];
+            const user = users.find(u => (u.email === identifier || u.name === identifier) && u.password === password);
+
+            if (user) {
+                state.currentUser = user;
+                localStorage.setItem('santap_current_user', JSON.stringify(user));
+                
+                // Auto switch role based on registered account role
+                if (user.role) {
+                    state.role = user.role;
+                    document.getElementById('roleSelector').value = user.role;
+                    updateRolePermissions();
+                }
+
+                syncAccountUI();
+                updateUI();
+                closeAuthModal();
+                playSuccessSound();
+                showToast(`👋 Selamat datang kembali, ${user.name}!`);
+            } else {
+                showToast(`❌ Email / Kata sandi tidak cocok!`);
+            }
+        }
+
+        function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const role = document.getElementById('regRole').value;
+            const password = document.getElementById('regPassword').value;
+
+            const users = JSON.parse(localStorage.getItem('santap_users')) || [];
+            
+            if (users.some(u => u.email === email)) {
+                showToast(`⚠️ Email sudah terdaftar! Silakan login.`);
+                return;
+            }
+
+            const newUser = {
+                id: Date.now().toString(),
+                name,
+                email,
+                role,
+                password,
+                points: 100 // Bonus Poin Pendaftaran
+            };
+
+            users.push(newUser);
+            localStorage.setItem('santap_users', JSON.stringify(users));
+
+            // Auto Login setelah daftar
+            state.currentUser = newUser;
+            localStorage.setItem('santap_current_user', JSON.stringify(newUser));
+            state.role = role;
+            document.getElementById('roleSelector').value = role;
+
+            updateRolePermissions();
+            syncAccountUI();
+            updateUI();
+            closeAuthModal();
+            playSuccessSound();
+            showToast(`🎉 Akun berhasil dibuat! Bonus +100 Poin Selamat Datang.`);
+        }
+
+        function handleLogout() {
+            state.currentUser = null;
+            localStorage.removeItem('santap_current_user');
+            syncAccountUI();
+            closeAuthModal();
+            showToast(`ℹ️ Anda telah keluar dari akun.`);
+        }
+
+        function syncAccountUI() {
+            const userNameDisplay = document.getElementById('userNameDisplay');
+            const userRoleDisplay = document.getElementById('userRoleDisplay');
+            const userAvatar = document.getElementById('userAvatar');
+            const authBtnSidebar = document.getElementById('authBtnSidebar');
+            const headerAuthBtnText = document.getElementById('headerAuthBtnText');
+
+            if (state.currentUser) {
+                userNameDisplay.innerText = state.currentUser.name;
+                userRoleDisplay.innerText = getRoleName(state.currentUser.role);
+                userAvatar.innerText = state.currentUser.name.charAt(0).toUpperCase();
+                authBtnSidebar.innerText = "Akun";
+                authBtnSidebar.onclick = () => openAuthModal('profile');
+                headerAuthBtnText.innerText = state.currentUser.name;
+            } else {
+                userNameDisplay.innerText = "Pengunjung (Tamu)";
+                userRoleDisplay.innerText = "Belum Masuk Akun";
+                userAvatar.innerText = "G";
+                authBtnSidebar.innerText = "Masuk";
+                authBtnSidebar.onclick = () => openAuthModal('login');
+                headerAuthBtnText.innerText = "Masuk Akun";
+            }
+        }
+
+        function updateProfileModalData() {
+            if (!state.currentUser) return;
+            document.getElementById('profileModalName').innerText = state.currentUser.name;
+            document.getElementById('profileModalEmail').innerText = state.currentUser.email;
+            document.getElementById('profileModalRole').innerText = getRoleName(state.currentUser.role);
+            document.getElementById('profileModalAvatar').innerText = state.currentUser.name.charAt(0).toUpperCase();
+            
+            const pointsVal = state.userPoints[state.role];
+            document.getElementById('profileModalPoints').innerText = `${pointsVal} PTS`;
+        }
+
+        // Tab Navigation
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-50', 'text-brand-700', 'font-bold');
+                btn.classList.add('text-slate-600');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) {
+                activeNav.classList.add('bg-brand-50', 'text-brand-700', 'font-bold');
+            }
+
+            const titles = {
+                'beranda': 'Beranda Santap',
+                'kalkulator': 'Kalkulator Porsi Pintar',
+                'papan': 'Papan Pangan Selamat',
+                'lab': 'Laboratorium Eko-Enzim',
+                'dampak': 'Jejak Dampak Lingkungan',
+                'tukar': 'Tukar Poin Pahlawan'
+            };
+            document.getElementById('pageTitle').innerText = titles[tabId] || 'SANTAP';
+        }
+
+        // Role Management & Permissions
+        function setupRoleSelector() {
+            const selector = document.getElementById('roleSelector');
+            selector.addEventListener('change', (e) => {
+                state.role = e.target.value;
+                updateRolePermissions();
+                updateUI();
+                showToast(`Mode Peran: ${getRoleName(state.role)}`);
+            });
+            updateRolePermissions();
+        }
+
+        function getRoleName(roleKey) {
+            const roleNames = {
+                'siswa': '🎓 Siswa / Guru',
+                'kantin': '🧑‍🍳 Pengelola Kantin',
+                'kader': '🌿 Kader Lingkungan',
+                'admin': '📊 Admin / Pengawas'
+            };
+            return roleNames[roleKey] || 'Pengguna';
+        }
+
+        function updateRolePermissions() {
+            document.getElementById('currentRoleBadge').innerText = getRoleName(state.role);
+            document.getElementById('roleBadgeMobile').innerText = getRoleName(state.role);
+
+            const btnAdd = document.getElementById('btnOpenAddMenu');
+            const notice = document.getElementById('restrictedAddMenuNotice');
+
+            if (state.role === 'kantin' || state.role === 'admin') {
+                btnAdd.classList.remove('hidden');
+                if (notice) notice.classList.add('hidden');
+            } else {
+                btnAdd.classList.add('hidden');
+                if (notice) notice.classList.remove('hidden');
+            }
+        }
+
+        // Dynamic State UI Sync
+        function updateUI() {
+            localStorage.setItem('santap_pts_siswa', state.userPoints.siswa);
+            localStorage.setItem('santap_pts_kantin', state.userPoints.kantin);
+            localStorage.setItem('santap_pts_kader', state.userPoints.kader);
+            localStorage.setItem('santap_pts_admin', state.userPoints.admin);
+            localStorage.setItem('santap_food_items', JSON.stringify(state.foodItems));
+            localStorage.setItem('santap_metrics', JSON.stringify(state.metrics));
+
+            const pointLabels = {
+                siswa: { label: 'Poin Pahlawan Pangan', unit: 'PTS' },
+                kantin: { label: 'Poin Efisiensi Kantin', unit: 'PEK' },
+                kader: { label: 'Poin Eko-Inovasi', unit: 'PEI' },
+                admin: { label: 'Poin Audit Adiwiyata', unit: 'PAS' }
+            };
+
+            const currentPointVal = state.userPoints[state.role];
+            const currentMeta = pointLabels[state.role];
+
+            document.getElementById('userPointsLabel').innerText = currentMeta.label;
+            document.getElementById('userPointsDisplay').innerText = currentPointVal;
+            document.getElementById('userPointsUnit').innerText = currentMeta.unit;
+            document.getElementById('rewardUserPoints').innerText = `${currentPointVal} ${currentMeta.unit}`;
+            document.getElementById('userCo2Display').innerText = (currentPointVal * 0.025).toFixed(2);
+
+            document.getElementById('metricFoodSaved').innerText = state.metrics.foodSavedKg.toFixed(1);
+            document.getElementById('metricPortionsSaved').innerText = Math.round(state.metrics.foodSavedKg * 5);
+            document.getElementById('metricCo2Reduced').innerText = state.metrics.co2ReducedKg.toFixed(2);
+            document.getElementById('metricTotalPoints').innerText = state.metrics.totalPointsEarned.toLocaleString('id-ID');
+
+            renderFoodGrid();
+            renderHomeFlashSale();
+        }
+
+        function renderFoodGrid() {
+            const container = document.getElementById('foodGrid');
+            const totalAvailable = state.foodItems.reduce((acc, item) => acc + item.portions, 0);
+            document.getElementById('papanBadge').innerText = totalAvailable;
+
+            container.innerHTML = state.foodItems.map(item => {
+                const discountedPrice = item.originalPrice * (1 - item.discount / 100);
+                const isOut = item.portions <= 0;
+                return `
+                    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col justify-between transition hover:shadow-md">
+                        <div class="p-5">
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="bg-red-100 text-red-700 text-[10px] font-bold px-2.5 py-1 rounded-full border border-red-200 uppercase tracking-wider">
+                                    Diskon ${item.discount}%
+                                </span>
+                                <span class="text-xs text-slate-500 font-medium flex items-center gap-1">
+                                    <i data-lucide="clock" class="w-3.5 h-3.5"></i> s.d ${item.time}
+                                </span>
+                            </div>
+                            <h4 class="font-bold text-slate-900 text-sm mb-1">${item.name}</h4>
+                            <div class="flex items-baseline space-x-2 mt-2">
+                                <span class="text-lg font-extrabold text-emerald-600">Rp ${discountedPrice.toLocaleString('id-ID')}</span>
+                                <span class="text-xs text-slate-400 line-through">Rp ${item.originalPrice.toLocaleString('id-ID')}</span>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] text-slate-500 block uppercase font-bold">Sisa Tersedia:</span>
+                                <span class="text-xs font-extrabold ${isOut ? 'text-red-500' : 'text-slate-800'}">${isOut ? 'HABIS' : item.portions + ' Porsi'}</span>
+                            </div>
+                            <button onclick="claimFoodItem(${item.id})" ${isOut ? 'disabled' : ''} class="${isOut ? 'bg-slate-300 cursor-not-allowed' : 'bg-amber-500 hover:bg-amber-600 shadow-sm'} text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center space-x-1">
+                                <i data-lucide="check" class="w-4 h-4"></i>
+                                <span>${isOut ? 'Habis' : 'Klaim Porsi'}</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function renderHomeFlashSale() {
+            const container = document.getElementById('homeFlashSaleContainer');
+            const activeItems = state.foodItems.filter(i => i.portions > 0).slice(0, 2);
+
+            if (activeItems.length === 0) {
+                container.innerHTML = `<div class="col-span-2 text-center py-6 text-xs text-slate-400">Belum ada promo aktif saat ini.</div>`;
+                return;
+            }
+
+            container.innerHTML = activeItems.map(item => {
+                const discountedPrice = item.originalPrice * (1 - item.discount / 100);
+                return `
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60 flex justify-between items-center">
+                        <div>
+                            <span class="text-[9px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded uppercase">Save ${item.discount}%</span>
+                            <h4 class="font-bold text-slate-800 text-xs mt-1">${item.name}</h4>
+                            <div class="text-xs font-bold text-emerald-600 mt-0.5">Rp ${discountedPrice.toLocaleString('id-ID')}</div>
+                        </div>
+                        <button onclick="switchTab('papan')" class="bg-white border border-slate-300 text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-100">
+                            Klaim
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function claimFoodItem(id) {
+            const item = state.foodItems.find(i => i.id === id);
+            if (item && item.portions > 0) {
+                item.portions -= 1;
+                state.userPoints[state.role] += 20;
+                state.metrics.foodSavedKg += 0.2;
+                state.metrics.co2ReducedKg += 0.5;
+                state.metrics.totalPointsEarned += 20;
+
+                updateUI();
+                playSuccessSound();
+                showToast(`🎉 Klaim 1 Porsi ${item.name}! +20 Poin ke peran active.`);
+            }
+        }
+
+        function calculatePortions(e) {
+            e.preventDefault();
+            const total = parseInt(document.getElementById('calcTotalStudents').value);
+            const rate = parseInt(document.getElementById('calcAttendanceRate').value) / 100;
+            const weather = document.getElementById('calcWeather').value;
+            const schedule = document.getElementById('calcSchedule').value;
+
+            let modifier = 1.0;
+            if (weather === 'hujan') modifier -= 0.15;
+            if (weather === 'panas') modifier -= 0.05;
+            if (schedule === 'ujian') modifier -= 0.25;
+            if (schedule === 'ekstra') modifier += 0.10;
+
+            const recommended = Math.round(total * rate * modifier);
+            const preventedWastePortions = Math.max(0, total - recommended);
+            const preventedKg = (preventedWastePortions * 0.2).toFixed(1);
+            const moneySaved = preventedWastePortions * 3000;
+            const co2Prevented = (preventedKg * 2.5).toFixed(1);
+
+            document.getElementById('resRecommendedPortions').innerText = recommended;
+            document.getElementById('resStandardPortions').innerText = total;
+            document.getElementById('resPreventedWaste').innerText = `${preventedWastePortions} Porsi (~${preventedKg} kg)`;
+            document.getElementById('resMoneySaved').innerText = `Rp ${moneySaved.toLocaleString('id-ID')}`;
+            document.getElementById('resCo2Prevented').innerText = `${co2Prevented} kg CO₂e`;
+        }
+
+        function applyToMenu() {
+            state.userPoints.kantin += 30;
+            updateUI();
+            showToast("🎯 Target porsi disimpan! +30 PEK (Pengelola Kantin).");
+        }
+
+        function calculateEcoEnzyme() {
+            const waste = parseFloat(document.getElementById('wasteWeightInput').value) || 0;
+            const sugar = (waste / 3).toFixed(2);
+            const water = ((waste / 3) * 10).toFixed(1);
+            const yieldVolume = (parseFloat(water) * 1.1).toFixed(1);
+
+            document.getElementById('recipeSugar').innerText = `${sugar} kg`;
+            document.getElementById('recipeWaste').innerText = `${waste.toFixed(1)} kg`;
+            document.getElementById('recipeWater').innerText = `${water} Liter`;
+            document.getElementById('recipeYield').innerText = `~ ${yieldVolume} Liter`;
+        }
+
+        function logEcoEnzymeBatch() {
+            const waste = parseFloat(document.getElementById('wasteWeightInput').value) || 0;
+            state.metrics.foodSavedKg += waste;
+            state.metrics.co2ReducedKg += waste * 2.5;
+            state.userPoints.kader += 50;
+
+            updateUI();
+            playSuccessSound();
+            showToast(`🧪 Batch Eko-Enzim (${waste} kg limbah) dicatat! +50 PEI.`);
+        }
+
+        function toggleAddMenuModal() {
+            if (state.role !== 'kantin' && state.role !== 'admin') {
+                showToast("⚠️ Akses Terbatas! Hanya Pengelola Kantin & Admin yang dapat menambah menu.");
+                return;
+            }
+            const modal = document.getElementById('addMenuModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function handleAddNewFood(e) {
+            e.preventDefault();
+            const name = document.getElementById('newFoodName').value;
+            const originalPrice = parseInt(document.getElementById('newFoodOriginalPrice').value);
+            const discount = parseInt(document.getElementById('newFoodDiscount').value);
+            const portions = parseInt(document.getElementById('newFoodPortions').value);
+            const time = document.getElementById('newFoodTime').value;
+
+            const newItem = { id: Date.now(), name, originalPrice, discount, portions, time };
+            state.foodItems.unshift(newItem);
+            state.userPoints.kantin += 25;
+
+            updateUI();
+            toggleAddMenuModal();
+            playSuccessSound();
+            showToast(`✨ Flash sale "${name}" ditayangkan! +25 Poin Kantin.`);
+        }
+
+        function redeemReward(name, cost) {
+            const currentPoints = state.userPoints[state.role];
+            if (currentPoints >= cost) {
+                state.userPoints[state.role] -= cost;
+                updateUI();
+                playSuccessSound();
+                showToast(`🎁 Penukaran "${name}" berhasil! Saldo berkurang ${cost} Poin.`);
+            } else {
+                showToast(`❌ Poin belum cukup. Anda butuh ${cost - currentPoints} Poin lagi.`);
+            }
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-xl flex items-center space-x-2 border border-slate-700 transition transform translate-y-2 opacity-0';
+            toast.innerHTML = `<i data-lucide="info" class="w-4 h-4 text-brand-500"></i><span>${message}</span>`;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('impactChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'],
+                    datasets: [{
+                        label: 'Makanan Terselamatkan (kg)',
+                        data: [18.2, 22.5, 19.0, 25.4, 28.1, 15.3],
+                        borderColor: '#22c55e',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#15803d',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
